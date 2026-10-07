@@ -1,5 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+    const SUPABASE_URL = "https://wsuibsilfwqdjqhuttfn.supabase.co/rest/v1/";
+    const SUPABASE_KEY = "sb_publishable_6JUNY6IGMqwt0BWd6eUyeg_wl58peJL";
+
+    const supabaseClient = supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
