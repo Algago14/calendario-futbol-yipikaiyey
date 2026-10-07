@@ -157,9 +157,9 @@ async function cargarPartidos() {
                 📍 ${partido.campo || "Campo por confirmar"}
             </div>
 
-            <button class="boton" onclick="alert('Aquí pondremos la disponibilidad')">
-                ¿Puedes jugar?
-            </button>
+<button class="boton" onclick="mostrarDisponibilidad(${partido.id})">
+    ¿Puedes jugar?
+</button>
         `;
 
         lista.appendChild(tarjeta);
