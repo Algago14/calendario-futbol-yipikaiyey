@@ -2,7 +2,9 @@
 <html lang="es">
 
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Calendario de fútbol</title>
@@ -11,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
+
         const SUPABASE_URL = "https://wsuibsilfwqdjqhuttfn.supabase.co";
         const SUPABASE_KEY = "sb_publishable_6JUNY6IGMqwt0BWd6eUyeg_wl58peJL";
 
@@ -18,7 +21,9 @@
             SUPABASE_URL,
             SUPABASE_KEY
         );
+
     </script>
+
 
     <style>
 
@@ -29,6 +34,7 @@
             color: #1f2937;
         }
 
+
         header {
             background: #111827;
             color: white;
@@ -36,21 +42,25 @@
             padding: 30px 20px;
         }
 
+
         header h1 {
             margin: 0;
             font-size: 28px;
         }
+
 
         header p {
             margin: 8px 0 0;
             opacity: 0.8;
         }
 
+
         main {
             max-width: 700px;
             margin: 30px auto;
             padding: 0 20px;
         }
+
 
         .partido {
             background: white;
@@ -60,11 +70,13 @@
             box-shadow: 0 3px 10px rgba(0,0,0,0.08);
         }
 
+
         .jornada {
             font-size: 14px;
             color: #6b7280;
             margin-bottom: 10px;
         }
+
 
         .equipos {
             font-size: 22px;
@@ -73,11 +85,13 @@
             margin: 15px 0;
         }
 
+
         .datos {
             text-align: center;
             line-height: 1.8;
             color: #4b5563;
         }
+
 
         .boton {
             display: block;
@@ -92,15 +106,53 @@
             cursor: pointer;
         }
 
+
         .boton:hover {
             background: #1f2937;
+        }
+
+
+        /* Disponibilidad */
+
+        .disponibilidad {
+            margin-top: 22px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 18px;
+        }
+
+
+        .estado {
+            margin-bottom: 12px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+
+        .estado-titulo {
+            font-weight: bold;
+        }
+
+
+        .nombres {
+            color: #4b5563;
+            margin-top: 3px;
+            padding-left: 22px;
+        }
+
+
+        .sin-respuestas {
+            color: #9ca3af;
+            font-size: 14px;
+            text-align: center;
         }
 
     </style>
 
 </head>
 
+
 <body>
+
 
 <header>
 
@@ -129,13 +181,26 @@
 
 async function cargarPartidos() {
 
-    const lista = document.getElementById("lista-partidos");
+    const lista =
+        document.getElementById("lista-partidos");
 
-    const { data, error } = await supabaseClient
-        .from("partidos")
-        .select("*")
-        .order("fecha", { ascending: true })
-        .order("hora", { ascending: true });
+
+    /* Obtener partidos */
+
+    const { data: partidos, error } =
+        await supabaseClient
+
+            .from("partidos")
+
+            .select("*")
+
+            .order("fecha", {
+                ascending: true
+            })
+
+            .order("hora", {
+                ascending: true
+            });
 
 
     if (error) {
@@ -152,7 +217,7 @@ async function cargarPartidos() {
     }
 
 
-    if (!data || data.length === 0) {
+    if (!partidos || partidos.length === 0) {
 
         lista.innerHTML = `
             <p style="text-align:center;">
@@ -164,25 +229,127 @@ async function cargarPartidos() {
     }
 
 
+    /* Obtener todas las disponibilidades */
+
+    const {
+        data: disponibilidades,
+        error: errorDisponibilidad
+    } = await supabaseClient
+
+        .from("disponibilidad")
+
+        .select(`
+            partido_id,
+            jugador_id,
+            estado,
+            jugadores (
+                nombre
+            )
+        `);
+
+
+    if (errorDisponibilidad) {
+
+        console.error(errorDisponibilidad);
+
+    }
+
+
+    const respuestas =
+        disponibilidades || [];
+
+
     lista.innerHTML = "";
 
 
-    data.forEach((partido, indice) => {
+    /* Crear cada partido */
 
-        const fecha = new Date(
-            partido.fecha + "T00:00:00"
-        );
+    partidos.forEach((partido, indice) => {
+
+
+        const fecha =
+            new Date(
+                partido.fecha + "T00:00:00"
+            );
 
 
         const fechaFormateada =
-            fecha.toLocaleDateString("es-ES", {
-                weekday: "long",
-                day: "numeric",
-                month: "long"
-            });
+            fecha.toLocaleDateString(
+                "es-ES",
+                {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long"
+                }
+            );
 
 
-        const tarjeta = document.createElement("div");
+        /* Filtrar respuestas de este partido */
+
+        const respuestasPartido =
+            respuestas.filter(
+                respuesta =>
+                    respuesta.partido_id === partido.id
+            );
+
+
+        /* Separar por estado */
+
+        const disponibles =
+            respuestasPartido.filter(
+                respuesta =>
+                    respuesta.estado === "si"
+            );
+
+
+        const noDisponibles =
+            respuestasPartido.filter(
+                respuesta =>
+                    respuesta.estado === "no"
+            );
+
+
+        const dudas =
+            respuestasPartido.filter(
+                respuesta =>
+                    respuesta.estado === "duda"
+            );
+
+
+        /* Obtener nombres */
+
+        const nombresSi =
+            disponibles
+                .map(
+                    respuesta =>
+                        respuesta.jugadores?.nombre
+                )
+                .filter(Boolean);
+
+
+        const nombresNo =
+            noDisponibles
+                .map(
+                    respuesta =>
+                        respuesta.jugadores?.nombre
+                )
+                .filter(Boolean);
+
+
+        const nombresDuda =
+            dudas
+                .map(
+                    respuesta =>
+                        respuesta.jugadores?.nombre
+                )
+                .filter(Boolean);
+
+
+        /* Crear tarjeta */
+
+        const tarjeta =
+            document.createElement("div");
+
 
         tarjeta.className = "partido";
 
@@ -193,9 +360,11 @@ async function cargarPartidos() {
                 Jornada ${indice + 1}
             </div>
 
+
             <div class="equipos">
                 ${partido.local} 🆚 ${partido.visitante}
             </div>
+
 
             <div class="datos">
 
@@ -208,11 +377,85 @@ async function cargarPartidos() {
             </div>
 
 
+            <div class="disponibilidad">
+
+
+                <div class="estado">
+
+                    <div class="estado-titulo">
+
+                        🟢 Sí:
+                        ${nombresSi.length}
+
+                    </div>
+
+                    <div class="nombres">
+
+                        ${
+                            nombresSi.length
+                                ? nombresSi.join(", ")
+                                : "Nadie ha confirmado todavía"
+                        }
+
+                    </div>
+
+                </div>
+
+
+                <div class="estado">
+
+                    <div class="estado-titulo">
+
+                        🔴 No:
+                        ${nombresNo.length}
+
+                    </div>
+
+                    <div class="nombres">
+
+                        ${
+                            nombresNo.length
+                                ? nombresNo.join(", ")
+                                : "Nadie ha indicado que no pueda"
+                        }
+
+                    </div>
+
+                </div>
+
+
+                <div class="estado">
+
+                    <div class="estado-titulo">
+
+                        🟡 Duda:
+                        ${nombresDuda.length}
+
+                    </div>
+
+                    <div class="nombres">
+
+                        ${
+                            nombresDuda.length
+                                ? nombresDuda.join(", ")
+                                : "Nadie tiene dudas"
+                        }
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
             <button
                 class="boton"
                 onclick="mostrarDisponibilidad(${partido.id})"
             >
+
                 ¿Puedes jugar?
+
             </button>
 
         `;
@@ -233,9 +476,10 @@ async function cargarPartidos() {
 async function mostrarDisponibilidad(partidoId) {
 
 
-    /* Obtener jugadores */
-
-    const { data: jugadores, error } = await supabaseClient
+    const {
+        data: jugadores,
+        error
+    } = await supabaseClient
 
         .from("jugadores")
 
@@ -268,20 +512,21 @@ async function mostrarDisponibilidad(partidoId) {
     }
 
 
-    /* Crear opciones */
+    const opciones =
+        jugadores
 
-    const opciones = jugadores
-        .map(jugador => `
+            .map(
+                jugador => `
 
-            <option value="${jugador.id}">
-                ${jugador.nombre}
-            </option>
+                    <option value="${jugador.id}">
+                        ${jugador.nombre}
+                    </option>
 
-        `)
-        .join("");
+                `
+            )
 
+            .join("");
 
-    /* Crear ventana */
 
     const ventana =
         document.createElement("div");
@@ -324,9 +569,7 @@ async function mostrarDisponibilidad(partidoId) {
             ">
 
 
-                <h2 style="
-                    margin-top:0;
-                ">
+                <h2 style="margin-top:0;">
 
                     ¿Puedes jugar?
 
@@ -349,6 +592,7 @@ async function mostrarDisponibilidad(partidoId) {
                         padding:12px;
 
                         margin-top:8px;
+
                         margin-bottom:20px;
 
                         border-radius:8px;
@@ -494,7 +738,7 @@ async function mostrarDisponibilidad(partidoId) {
     document.body.appendChild(ventana);
 
 
-    /* Botón cancelar */
+    /* Cancelar */
 
     document
         .getElementById("cerrar-ventana")
@@ -505,7 +749,7 @@ async function mostrarDisponibilidad(partidoId) {
         };
 
 
-    /* Botón Sí */
+    /* Sí */
 
     document
         .getElementById("respuesta-si")
@@ -516,7 +760,7 @@ async function mostrarDisponibilidad(partidoId) {
         };
 
 
-    /* Botón No */
+    /* No */
 
     document
         .getElementById("respuesta-no")
@@ -527,7 +771,7 @@ async function mostrarDisponibilidad(partidoId) {
         };
 
 
-    /* Botón Duda */
+    /* Duda */
 
     document
         .getElementById("respuesta-duda")
@@ -538,7 +782,7 @@ async function mostrarDisponibilidad(partidoId) {
         };
 
 
-    /* Guardar respuesta */
+    /* Guardar */
 
     async function enviarRespuesta(estado) {
 
@@ -559,14 +803,23 @@ async function mostrarDisponibilidad(partidoId) {
         }
 
 
-        await guardarDisponibilidad(
-            partidoId,
-            jugadorId,
-            estado
-        );
+        const guardado =
+            await guardarDisponibilidad(
+                partidoId,
+                jugadorId,
+                estado
+            );
 
 
-        ventana.remove();
+        if (guardado) {
+
+            ventana.remove();
+
+            /* Actualizar inmediatamente */
+
+            await cargarPartidos();
+
+        }
 
     }
 
@@ -585,7 +838,9 @@ async function guardarDisponibilidad(
 ) {
 
 
-    const { error } = await supabaseClient
+    const {
+        error
+    } = await supabaseClient
 
         .from("disponibilidad")
 
@@ -618,13 +873,11 @@ async function guardarDisponibilidad(
             "No se ha podido guardar tu respuesta."
         );
 
-        return;
+        return false;
     }
 
 
-    alert(
-        "✅ Tu disponibilidad se ha guardado."
-    );
+    return true;
 
 }
 
@@ -641,8 +894,4 @@ cargarPartidos();
 
 </body>
 
-</html>
-</script>
-
-</body>
 </html>
