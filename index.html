@@ -98,25 +98,75 @@
 
 <main>
 
- <div class="partido">
-    <div class="jornada">Jornada 1</div>
+<main id="lista-partidos">
 
-    <div class="equipos">
-        Málaga FC 🆚 CD Ejemplo
-    </div>
-
-    <div class="datos">
-        📅 Domingo, 18 de octubre<br>
-        🕘 20:30<br>
-        📍 Campo Municipal de Málaga
-    </div>
-
-        <button class="boton">
-            ¿Puedes jugar?
-        </button>
-    </div>
+    <p style="text-align:center;">Cargando partidos...</p>
 
 </main>
+</main>
+<script>
+async function cargarPartidos() {
 
+    const lista = document.getElementById("lista-partidos");
+
+    const { data, error } = await supabaseClient
+        .from("partidos")
+        .select("*")
+        .order("fecha", { ascending: true })
+        .order("hora", { ascending: true });
+
+    if (error) {
+        console.error(error);
+        lista.innerHTML = "<p style='text-align:center;'>No se han podido cargar los partidos.</p>";
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        lista.innerHTML = "<p style='text-align:center;'>No hay partidos programados.</p>";
+        return;
+    }
+
+    lista.innerHTML = "";
+
+    data.forEach((partido, indice) => {
+
+        const fecha = new Date(partido.fecha + "T00:00:00");
+
+        const fechaFormateada = fecha.toLocaleDateString("es-ES", {
+            weekday: "long",
+            day: "numeric",
+            month: "long"
+        });
+
+        const tarjeta = document.createElement("div");
+
+        tarjeta.className = "partido";
+
+        tarjeta.innerHTML = `
+            <div class="jornada">
+                Jornada ${indice + 1}
+            </div>
+
+            <div class="equipos">
+                ${partido.local} 🆚 ${partido.visitante}
+            </div>
+
+            <div class="datos">
+                📅 ${fechaFormateada}<br>
+                🕘 ${partido.hora.slice(0, 5)}<br>
+                📍 ${partido.campo || "Campo por confirmar"}
+            </div>
+
+            <button class="boton" onclick="alert('Aquí pondremos la disponibilidad')">
+                ¿Puedes jugar?
+            </button>
+        `;
+
+        lista.appendChild(tarjeta);
+    });
+}
+
+cargarPartidos();
+</script>
 </body>
 </html>
