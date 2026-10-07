@@ -4,13 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Calendario de fútbol</title>
 
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        const SUPABASE_URL = "https://wsuibsilfwqdjqhuttfn.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_6JUNY6IGMqwt0BWd6eUyeg_wl58peJL";
+        const SUPABASE_URL = "TU_PROJECT_URL";
+        const SUPABASE_KEY = "TU_PUBLISHABLE_KEY";
 
         const supabaseClient = supabase.createClient(
             SUPABASE_URL,
@@ -19,6 +21,7 @@
     </script>
 
     <style>
+
         body {
             font-family: Arial, sans-serif;
             background: #f2f4f7;
@@ -88,23 +91,41 @@
             font-size: 16px;
             cursor: pointer;
         }
+
+        .boton:hover {
+            background: #1f2937;
+        }
+
     </style>
+
 </head>
 
 <body>
 
 <header>
+
     <h1>⚽ EJEMPLO</h1>
+
     <p>Temporada 2026/2027</p>
+
 </header>
+
 
 <main id="lista-partidos">
 
-    <p style="text-align:center;">Cargando partidos...</p>
+    <p style="text-align:center;">
+        Cargando partidos...
+    </p>
 
 </main>
 
+
 <script>
+
+
+/* =========================================================
+   CARGAR PARTIDOS
+   ========================================================= */
 
 async function cargarPartidos() {
 
@@ -116,34 +137,58 @@ async function cargarPartidos() {
         .order("fecha", { ascending: true })
         .order("hora", { ascending: true });
 
+
     if (error) {
+
         console.error(error);
-        lista.innerHTML = "<p style='text-align:center;'>No se han podido cargar los partidos.</p>";
+
+        lista.innerHTML = `
+            <p style="text-align:center;">
+                No se han podido cargar los partidos.
+            </p>
+        `;
+
         return;
     }
 
+
     if (!data || data.length === 0) {
-        lista.innerHTML = "<p style='text-align:center;'>No hay partidos programados.</p>";
+
+        lista.innerHTML = `
+            <p style="text-align:center;">
+                No hay partidos programados.
+            </p>
+        `;
+
         return;
     }
+
 
     lista.innerHTML = "";
 
+
     data.forEach((partido, indice) => {
 
-        const fecha = new Date(partido.fecha + "T00:00:00");
+        const fecha = new Date(
+            partido.fecha + "T00:00:00"
+        );
 
-        const fechaFormateada = fecha.toLocaleDateString("es-ES", {
-            weekday: "long",
-            day: "numeric",
-            month: "long"
-        });
+
+        const fechaFormateada =
+            fecha.toLocaleDateString("es-ES", {
+                weekday: "long",
+                day: "numeric",
+                month: "long"
+            });
+
 
         const tarjeta = document.createElement("div");
 
         tarjeta.className = "partido";
 
+
         tarjeta.innerHTML = `
+
             <div class="jornada">
                 Jornada ${indice + 1}
             </div>
@@ -153,54 +198,450 @@ async function cargarPartidos() {
             </div>
 
             <div class="datos">
+
                 📅 ${fechaFormateada}<br>
+
                 🕘 ${partido.hora.slice(0, 5)}<br>
+
                 📍 ${partido.campo || "Campo por confirmar"}
+
             </div>
 
-            <button class="boton" onclick="mostrarDisponibilidad(${partido.id})">
+
+            <button
+                class="boton"
+                onclick="mostrarDisponibilidad(${partido.id})"
+            >
                 ¿Puedes jugar?
             </button>
+
         `;
 
+
         lista.appendChild(tarjeta);
+
     });
+
 }
 
 
-function mostrarDisponibilidad(partidoId) {
 
-    const nombre = prompt("¿Cuál es tu nombre?");
+/* =========================================================
+   MOSTRAR VENTANA DE DISPONIBILIDAD
+   ========================================================= */
 
-    if (!nombre) {
+async function mostrarDisponibilidad(partidoId) {
+
+
+    /* Obtener jugadores */
+
+    const { data: jugadores, error } = await supabaseClient
+
+        .from("jugadores")
+
+        .select("id, nombre")
+
+        .order("nombre", {
+            ascending: true
+        });
+
+
+    if (error) {
+
+        console.error(error);
+
+        alert(
+            "No se han podido cargar los jugadores."
+        );
+
         return;
     }
 
-    const respuesta = prompt(
-        "¿Puedes jugar?\n\n" +
-        "Escribe:\n" +
-        "SI = Sí, puedo jugar\n" +
-        "NO = No puedo\n" +
-        "DUDA = Todavía no lo sé"
+
+    if (!jugadores || jugadores.length === 0) {
+
+        alert(
+            "Todavía no hay jugadores registrados."
+        );
+
+        return;
+    }
+
+
+    /* Crear opciones */
+
+    const opciones = jugadores
+        .map(jugador => `
+
+            <option value="${jugador.id}">
+                ${jugador.nombre}
+            </option>
+
+        `)
+        .join("");
+
+
+    /* Crear ventana */
+
+    const ventana =
+        document.createElement("div");
+
+
+    ventana.innerHTML = `
+
+        <div style="
+
+            position: fixed;
+            inset: 0;
+
+            background: rgba(0,0,0,0.5);
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+
+            z-index: 9999;
+
+        ">
+
+
+            <div style="
+
+                background: white;
+
+                width: 100%;
+                max-width: 400px;
+
+                border-radius: 16px;
+
+                padding: 25px;
+
+                box-sizing: border-box;
+
+            ">
+
+
+                <h2 style="
+                    margin-top:0;
+                ">
+
+                    ¿Puedes jugar?
+
+                </h2>
+
+
+                <label for="jugador-select">
+
+                    ¿Quién eres?
+
+                </label>
+
+
+                <select
+                    id="jugador-select"
+                    style="
+
+                        width:100%;
+
+                        padding:12px;
+
+                        margin-top:8px;
+                        margin-bottom:20px;
+
+                        border-radius:8px;
+
+                        border:1px solid #d1d5db;
+
+                        font-size:16px;
+
+                    "
+                >
+
+                    <option value="">
+
+                        Selecciona tu nombre
+
+                    </option>
+
+                    ${opciones}
+
+                </select>
+
+
+                <div style="
+
+                    display:flex;
+
+                    gap:10px;
+
+                    flex-direction:column;
+
+                ">
+
+
+                    <button
+                        id="respuesta-si"
+                        style="
+
+                            padding:13px;
+
+                            border:none;
+
+                            border-radius:10px;
+
+                            background:#16a34a;
+
+                            color:white;
+
+                            font-size:16px;
+
+                            cursor:pointer;
+
+                        "
+                    >
+
+                        🟢 Sí, puedo
+
+                    </button>
+
+
+                    <button
+                        id="respuesta-no"
+                        style="
+
+                            padding:13px;
+
+                            border:none;
+
+                            border-radius:10px;
+
+                            background:#dc2626;
+
+                            color:white;
+
+                            font-size:16px;
+
+                            cursor:pointer;
+
+                        "
+                    >
+
+                        🔴 No puedo
+
+                    </button>
+
+
+                    <button
+                        id="respuesta-duda"
+                        style="
+
+                            padding:13px;
+
+                            border:none;
+
+                            border-radius:10px;
+
+                            background:#d97706;
+
+                            color:white;
+
+                            font-size:16px;
+
+                            cursor:pointer;
+
+                        "
+                    >
+
+                        🟡 Tengo dudas
+
+                    </button>
+
+
+                    <button
+                        id="cerrar-ventana"
+                        style="
+
+                            padding:10px;
+
+                            border:none;
+
+                            background:transparent;
+
+                            color:#6b7280;
+
+                            cursor:pointer;
+
+                        "
+                    >
+
+                        Cancelar
+
+                    </button>
+
+
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(ventana);
+
+
+    /* Botón cancelar */
+
+    document
+        .getElementById("cerrar-ventana")
+        .onclick = () => {
+
+            ventana.remove();
+
+        };
+
+
+    /* Botón Sí */
+
+    document
+        .getElementById("respuesta-si")
+        .onclick = () => {
+
+            enviarRespuesta("si");
+
+        };
+
+
+    /* Botón No */
+
+    document
+        .getElementById("respuesta-no")
+        .onclick = () => {
+
+            enviarRespuesta("no");
+
+        };
+
+
+    /* Botón Duda */
+
+    document
+        .getElementById("respuesta-duda")
+        .onclick = () => {
+
+            enviarRespuesta("duda");
+
+        };
+
+
+    /* Guardar respuesta */
+
+    async function enviarRespuesta(estado) {
+
+
+        const jugadorId =
+            document.getElementById(
+                "jugador-select"
+            ).value;
+
+
+        if (!jugadorId) {
+
+            alert(
+                "Primero selecciona tu nombre."
+            );
+
+            return;
+        }
+
+
+        await guardarDisponibilidad(
+            partidoId,
+            jugadorId,
+            estado
+        );
+
+
+        ventana.remove();
+
+    }
+
+}
+
+
+
+/* =========================================================
+   GUARDAR / ACTUALIZAR DISPONIBILIDAD
+   ========================================================= */
+
+async function guardarDisponibilidad(
+    partidoId,
+    jugadorId,
+    estado
+) {
+
+
+    const { error } = await supabaseClient
+
+        .from("disponibilidad")
+
+        .upsert(
+
+            {
+                partido_id: partidoId,
+
+                jugador_id: jugadorId,
+
+                estado: estado,
+
+                actualizado_en:
+                    new Date().toISOString()
+            },
+
+            {
+                onConflict:
+                    "partido_id,jugador_id"
+            }
+
+        );
+
+
+    if (error) {
+
+        console.error(error);
+
+        alert(
+            "No se ha podido guardar tu respuesta."
+        );
+
+        return;
+    }
+
+
+    alert(
+        "✅ Tu disponibilidad se ha guardado."
     );
 
-    if (!respuesta) {
-        return;
-    }
-
-    const estado = respuesta.toLowerCase().trim();
-
-    if (!["si", "no", "duda"].includes(estado)) {
-        alert("Respuesta no válida. Escribe SI, NO o DUDA.");
-        return;
-    }
-
-    guardarDisponibilidad(partidoId, nombre, estado);
 }
 
+
+
+/* =========================================================
+   INICIAR
+   ========================================================= */
 
 cargarPartidos();
 
+
+</script>
+
+</body>
+
+</html>
 </script>
 
 </body>
