@@ -99,8 +99,37 @@
 <main>
 
 <main id="lista-partidos">
+    
 
-    <p style="text-align:center;">Cargando partidos...</p>
+    <p style="text-align:center;">function mostrarDisponibilidad(partidoId) {
+
+    const nombre = prompt("¿Cuál es tu nombre?");
+
+    if (!nombre) {
+        return;
+    }
+
+    const respuesta = prompt(
+        "¿Puedes jugar?\n\n" +
+        "Escribe:\n" +
+        "SI = Sí, puedo jugar\n" +
+        "NO = No puedo\n" +
+        "DUDA = Todavía no lo sé"
+    );
+
+    if (!respuesta) {
+        return;
+    }
+
+    const estado = respuesta.toLowerCase().trim();
+
+    if (!["si", "no", "duda"].includes(estado)) {
+        alert("Respuesta no válida. Escribe SI, NO o DUDA.");
+        return;
+    }
+
+    guardarDisponibilidad(partidoId, nombre, estado);
+}Cargando partidos...</p>
 
 </main>
 </main>
