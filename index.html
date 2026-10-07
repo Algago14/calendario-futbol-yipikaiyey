@@ -1,20 +1,22 @@
 <!DOCTYPE html>
 <html lang="es">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<script>
-    const SUPABASE_URL = "https://wsuibsilfwqdjqhuttfn.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_6JUNY6IGMqwt0BWd6eUyeg_wl58peJL";
-
-    const supabaseClient = supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-    );
-</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendario de fútbol</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        const SUPABASE_URL = "https://wsuibsilfwqdjqhuttfn.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_6JUNY6IGMqwt0BWd6eUyeg_wl58peJL";
+
+        const supabaseClient = supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        );
+    </script>
 
     <style>
         body {
@@ -92,48 +94,18 @@
 <body>
 
 <header>
-<h1>⚽ EJEMPLO</h1>
-<p>Temporada 2026/2027</p>
+    <h1>⚽ EJEMPLO</h1>
+    <p>Temporada 2026/2027</p>
 </header>
 
-<main>
-
 <main id="lista-partidos">
-    
 
-    <p style="text-align:center;">function mostrarDisponibilidad(partidoId) {
-
-    const nombre = prompt("¿Cuál es tu nombre?");
-
-    if (!nombre) {
-        return;
-    }
-
-    const respuesta = prompt(
-        "¿Puedes jugar?\n\n" +
-        "Escribe:\n" +
-        "SI = Sí, puedo jugar\n" +
-        "NO = No puedo\n" +
-        "DUDA = Todavía no lo sé"
-    );
-
-    if (!respuesta) {
-        return;
-    }
-
-    const estado = respuesta.toLowerCase().trim();
-
-    if (!["si", "no", "duda"].includes(estado)) {
-        alert("Respuesta no válida. Escribe SI, NO o DUDA.");
-        return;
-    }
-
-    guardarDisponibilidad(partidoId, nombre, estado);
-}Cargando partidos...</p>
+    <p style="text-align:center;">Cargando partidos...</p>
 
 </main>
-</main>
+
 <script>
+
 async function cargarPartidos() {
 
     const lista = document.getElementById("lista-partidos");
@@ -186,16 +158,50 @@ async function cargarPartidos() {
                 📍 ${partido.campo || "Campo por confirmar"}
             </div>
 
-<button class="boton" onclick="mostrarDisponibilidad(${partido.id})">
-    ¿Puedes jugar?
-</button>
+            <button class="boton" onclick="mostrarDisponibilidad(${partido.id})">
+                ¿Puedes jugar?
+            </button>
         `;
 
         lista.appendChild(tarjeta);
     });
 }
 
+
+function mostrarDisponibilidad(partidoId) {
+
+    const nombre = prompt("¿Cuál es tu nombre?");
+
+    if (!nombre) {
+        return;
+    }
+
+    const respuesta = prompt(
+        "¿Puedes jugar?\n\n" +
+        "Escribe:\n" +
+        "SI = Sí, puedo jugar\n" +
+        "NO = No puedo\n" +
+        "DUDA = Todavía no lo sé"
+    );
+
+    if (!respuesta) {
+        return;
+    }
+
+    const estado = respuesta.toLowerCase().trim();
+
+    if (!["si", "no", "duda"].includes(estado)) {
+        alert("Respuesta no válida. Escribe SI, NO o DUDA.");
+        return;
+    }
+
+    guardarDisponibilidad(partidoId, nombre, estado);
+}
+
+
 cargarPartidos();
+
 </script>
+
 </body>
 </html>
