@@ -164,6 +164,81 @@
             text-align: center;
         }
 
+
+        .resultado {
+            margin: 18px 0 8px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: 900;
+            color: #111827;
+        }
+        .resultado-label {
+            display: block;
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .boton-secundario {
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            background: white;
+            color: #111827;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .boton-secundario:hover { background: #f9fafb; }
+        .goleadores {
+            margin-top: 35px;
+            padding: 24px;
+            background: #111827;
+            color: white;
+            border-radius: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+        }
+        .goleadores h2 { margin: 0 0 18px; text-align: center; font-size: 24px; }
+        .tabla-goleadores { width: 100%; border-collapse: collapse; }
+        .tabla-goleadores th, .tabla-goleadores td {
+            padding: 10px 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            text-align: left;
+        }
+        .tabla-goleadores th:last-child, .tabla-goleadores td:last-child { text-align: right; }
+        .sin-goleadores { text-align: center; color: #d1d5db; margin: 0; }
+        .contador-gol {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .contador-gol-nombre { flex: 1; font-weight: 600; }
+        .contador-gol-controles { display: flex; align-items: center; gap: 8px; }
+        .contador-gol-controles button {
+            width: 34px; height: 34px; border: none; border-radius: 8px;
+            background: #111827; color: white; font-size: 20px; cursor: pointer;
+        }
+        .contador-gol-numero {
+            min-width: 24px; text-align: center; font-weight: 800; font-size: 17px;
+        }
+        .modal-contenido { max-height: 90vh; overflow-y: auto; }
+        .campo-resultado {
+            width: 70px; padding: 10px; border: 1px solid #d1d5db;
+            border-radius: 8px; font-size: 22px; font-weight: 800; text-align: center;
+        }
+        .resultado-inputs {
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; margin: 15px 0 22px;
+        }
+        .resultado-inputs span { font-size: 22px; font-weight: 800; }
+
     </style>
 
 </head>
@@ -389,6 +464,20 @@ async function cargarPartidos() {
                 ${partido.local} 🆚 ${partido.visitante}
             </div>
 
+            ${
+                partido.goles_local !== null &&
+                partido.goles_local !== undefined &&
+                partido.goles_visitante !== null &&
+                partido.goles_visitante !== undefined
+                    ? `
+                        <div class="resultado">
+                            <span class="resultado-label">Resultado</span>
+                            ${partido.goles_local} - ${partido.goles_visitante}
+                        </div>
+                    `
+                    : ""
+            }
+
 
             <div class="datos">
 
@@ -482,12 +571,23 @@ async function cargarPartidos() {
 
             </button>
 
+            <button
+                class="boton-secundario"
+                onclick="mostrarResultado(${partido.id})"
+            >
+
+                ⚽ Resultado y goleadores
+
+            </button>
+
         `;
 
 
         lista.appendChild(tarjeta);
 
     });
+
+    await mostrarClasificacionGoleadores();
 
 }
 
@@ -905,6 +1005,375 @@ async function guardarDisponibilidad(
 
 }
 
+
+
+
+/* =========================================================
+   RESULTADO Y GOLEADORES
+   ========================================================= */
+
+async function mostrarResultado(partidoId) {
+
+    const { data: partido, error: errorPartido } =
+        await supabaseClient
+            .from("partidos")
+            .select("*")
+            .eq("id", partidoId)
+            .single();
+
+    if (errorPartido) {
+        console.error(errorPartido);
+        alert("No se ha podido cargar el partido.");
+        return;
+    }
+
+    const { data: jugadores, error: errorJugadores } =
+        await supabaseClient
+            .from("jugadores")
+            .select("id, nombre")
+            .order("nombre", { ascending: true });
+
+    if (errorJugadores) {
+        console.error(errorJugadores);
+        alert("No se han podido cargar los jugadores.");
+        return;
+    }
+
+    if (!jugadores || jugadores.length === 0) {
+        alert("Todavía no hay jugadores registrados.");
+        return;
+    }
+
+    const { data: golesExistentes, error: errorGoles } =
+        await supabaseClient
+            .from("goles")
+            .select("jugador_id, cantidad")
+            .eq("partido_id", partidoId);
+
+    if (errorGoles) {
+        console.error(errorGoles);
+        alert("No se han podido cargar los goleadores.");
+        return;
+    }
+
+    const cantidades = {};
+    (golesExistentes || []).forEach(gol => {
+        cantidades[gol.jugador_id] = gol.cantidad;
+    });
+
+    const listaJugadores = jugadores.map(jugador => `
+        <div class="contador-gol">
+            <div class="contador-gol-nombre">${jugador.nombre}</div>
+            <div class="contador-gol-controles">
+                <button type="button" onclick="cambiarGoles(${jugador.id}, -1)">−</button>
+                <span class="contador-gol-numero" id="goles-jugador-${jugador.id}">
+                    ${cantidades[jugador.id] || 0}
+                </span>
+                <button type="button" onclick="cambiarGoles(${jugador.id}, 1)">+</button>
+            </div>
+        </div>
+    `).join("");
+
+    const ventana = document.createElement("div");
+
+    ventana.innerHTML = `
+        <div style="
+            position:fixed; inset:0; background:rgba(0,0,0,0.5);
+            display:flex; align-items:center; justify-content:center;
+            padding:20px; z-index:9999;
+        ">
+            <div class="modal-contenido" style="
+                background:white; width:100%; max-width:480px;
+                border-radius:16px; padding:25px; box-sizing:border-box;
+            ">
+                <h2 style="margin-top:0;text-align:center;">
+                    ⚽ Resultado y goleadores
+                </h2>
+
+                <p style="text-align:center;color:#6b7280;margin-top:0;">
+                    ${partido.local} - ${partido.visitante}
+                </p>
+
+                <div class="resultado-inputs">
+                    <div>
+                        <div style="font-size:12px;color:#6b7280;text-align:center;margin-bottom:5px;">
+                            ${partido.local}
+                        </div>
+                        <input id="goles-local" class="campo-resultado" type="number" min="0"
+                            value="${partido.goles_local !== null && partido.goles_local !== undefined ? partido.goles_local : ""}">
+                    </div>
+
+                    <span>-</span>
+
+                    <div>
+                        <div style="font-size:12px;color:#6b7280;text-align:center;margin-bottom:5px;">
+                            ${partido.visitante}
+                        </div>
+                        <input id="goles-visitante" class="campo-resultado" type="number" min="0"
+                            value="${partido.goles_visitante !== null && partido.goles_visitante !== undefined ? partido.goles_visitante : ""}">
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom:5px;">Goleadores de YIPIKAIYEY</h3>
+
+                <p style="margin-top:0;color:#6b7280;font-size:13px;">
+                    Usa + y − para indicar cuántos goles ha marcado cada jugador.
+                </p>
+
+                <div>${listaJugadores}</div>
+
+                <button class="boton" onclick="guardarResultado(${partidoId})">
+                    💾 Guardar resultado
+                </button>
+
+                <button id="cerrar-resultado" style="
+                    width:100%; margin-top:8px; padding:10px; border:none;
+                    background:transparent; color:#6b7280; cursor:pointer;
+                ">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(ventana);
+
+    document.getElementById("cerrar-resultado").onclick = () => ventana.remove();
+}
+
+
+function cambiarGoles(jugadorId, cambio) {
+
+    const elemento = document.getElementById(`goles-jugador-${jugadorId}`);
+    if (!elemento) return;
+
+    let cantidad = parseInt(elemento.textContent, 10) || 0;
+    cantidad += cambio;
+
+    if (cantidad < 0) cantidad = 0;
+
+    elemento.textContent = cantidad;
+}
+
+
+async function guardarResultado(partidoId) {
+
+    const golesLocal = parseInt(document.getElementById("goles-local").value, 10);
+    const golesVisitante = parseInt(document.getElementById("goles-visitante").value, 10);
+
+    if (
+        Number.isNaN(golesLocal) ||
+        Number.isNaN(golesVisitante) ||
+        golesLocal < 0 ||
+        golesVisitante < 0
+    ) {
+        alert("Introduce un resultado válido.");
+        return;
+    }
+
+    const { data: partido, error: errorPartido } =
+        await supabaseClient
+            .from("partidos")
+            .select("local, visitante")
+            .eq("id", partidoId)
+            .single();
+
+    if (errorPartido) {
+        console.error(errorPartido);
+        alert("No se ha podido comprobar el partido.");
+        return;
+    }
+
+    const elementos = document.querySelectorAll(".contador-gol-numero");
+    let totalGoleadores = 0;
+    const golesJugadores = [];
+
+    elementos.forEach(elemento => {
+
+        const jugadorId = elemento.id.replace("goles-jugador-", "");
+        const cantidad = parseInt(elemento.textContent, 10) || 0;
+
+        if (cantidad > 0) {
+            totalGoleadores += cantidad;
+            golesJugadores.push({
+                jugador_id: parseInt(jugadorId, 10),
+                cantidad: cantidad
+            });
+        }
+    });
+
+    const localEsYipikayey =
+        partido.local.toUpperCase().includes("YIPIKAIYEY");
+
+    const visitanteEsYipikayey =
+        partido.visitante.toUpperCase().includes("YIPIKAIYEY");
+
+    if (localEsYipikayey && totalGoleadores !== golesLocal) {
+        alert(
+            `Los goles de los jugadores (${totalGoleadores}) ` +
+            `no coinciden con los goles de YIPIKAIYEY (${golesLocal}).`
+        );
+        return;
+    }
+
+    if (visitanteEsYipikayey && totalGoleadores !== golesVisitante) {
+        alert(
+            `Los goles de los jugadores (${totalGoleadores}) ` +
+            `no coinciden con los goles de YIPIKAIYEY (${golesVisitante}).`
+        );
+        return;
+    }
+
+    const { error: errorResultado } =
+        await supabaseClient
+            .from("partidos")
+            .update({
+                goles_local: golesLocal,
+                goles_visitante: golesVisitante
+            })
+            .eq("id", partidoId);
+
+    if (errorResultado) {
+        console.error(errorResultado);
+        alert("No se ha podido guardar el resultado.");
+        return;
+    }
+
+    const { error: errorBorrado } =
+        await supabaseClient
+            .from("goles")
+            .delete()
+            .eq("partido_id", partidoId);
+
+    if (errorBorrado) {
+        console.error(errorBorrado);
+        alert("El resultado se guardó, pero no se pudieron actualizar los goleadores.");
+        return;
+    }
+
+    if (golesJugadores.length > 0) {
+
+        const registros = golesJugadores.map(gol => ({
+            partido_id: partidoId,
+            jugador_id: gol.jugador_id,
+            cantidad: gol.cantidad
+        }));
+
+        const { error: errorInsert } =
+            await supabaseClient
+                .from("goles")
+                .insert(registros);
+
+        if (errorInsert) {
+            console.error(errorInsert);
+            alert("El resultado se guardó, pero hubo un error al guardar los goleadores.");
+            return;
+        }
+    }
+
+    const modalResultado = document.getElementById("cerrar-resultado");
+    if (modalResultado) {
+        modalResultado.closest("div[style*='position:fixed']").parentElement.remove();
+    }
+
+    await cargarPartidos();
+}
+
+
+async function mostrarClasificacionGoleadores() {
+
+    const lista = document.getElementById("lista-partidos");
+
+    const { data: goles, error } =
+        await supabaseClient
+            .from("goles")
+            .select(`
+                jugador_id,
+                cantidad,
+                jugadores (
+                    nombre
+                )
+            `);
+
+    if (error) {
+        console.error(error);
+        return;
+    }
+
+    const acumulados = {};
+
+    (goles || []).forEach(gol => {
+
+        if (!acumulados[gol.jugador_id]) {
+            acumulados[gol.jugador_id] = {
+                nombre: gol.jugadores?.nombre || "Jugador",
+                goles: 0
+            };
+        }
+
+        acumulados[gol.jugador_id].goles += gol.cantidad;
+    });
+
+    const clasificacion = Object.values(acumulados).sort((a, b) => {
+
+        if (b.goles !== a.goles) {
+            return b.goles - a.goles;
+        }
+
+        return a.nombre.localeCompare(b.nombre, "es");
+    });
+
+    const bloque = document.createElement("div");
+    bloque.className = "goleadores";
+
+    if (clasificacion.length === 0) {
+
+        bloque.innerHTML = `
+            <h2>🏆 Clasificación de goleadores</h2>
+            <p class="sin-goleadores">
+                Todavía no hay goles registrados.
+            </p>
+        `;
+
+    } else {
+
+        const filas = clasificacion.map((jugador, indice) => {
+
+            let posicion = `${indice + 1}º`;
+
+            if (indice === 0) posicion = "🥇";
+            if (indice === 1) posicion = "🥈";
+            if (indice === 2) posicion = "🥉";
+
+            return `
+                <tr>
+                    <td>${posicion}</td>
+                    <td>${jugador.nombre}</td>
+                    <td>${jugador.goles}</td>
+                </tr>
+            `;
+        }).join("");
+
+        bloque.innerHTML = `
+            <h2>🏆 Clasificación de goleadores</h2>
+
+            <table class="tabla-goleadores">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Jugador</th>
+                        <th>Goles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filas}
+                </tbody>
+            </table>
+        `;
+    }
+
+    lista.appendChild(bloque);
+}
 
 
 /* =========================================================
